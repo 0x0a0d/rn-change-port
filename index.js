@@ -47,7 +47,7 @@ const modifyPackageJson = () => {
 const patchFiles = () => {
   const files = [
     [
-      /RCT_METRO_PORT(\)?\s+\|\|\s+)(['"]?)\d+\2/g,
+      /RCT_METRO_PORT(\)?)\s+\|\|\s+(['"]?)\d+\2/g,
       (m, m1, m2) => `RCT_METRO_PORT${m1} || ${m2}${port}${m2}`,
       [
         './node_modules/@react-native-community/cli-hermes/build/profileHermes/index.js',

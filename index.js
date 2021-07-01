@@ -35,7 +35,9 @@ const modifyPackageJson = () => {
   }
   for (const cmd of ['android', 'ios', 'start']) {
     try {
-      json.scripts[cmd] = json.scripts[cmd].replace(/\s+--port\s+\d+/g, '') + ` --port ${port}`
+      json.scripts[cmd] = json.scripts[cmd]
+        .replace(/\s+--port\s+\d+/g, '')
+        .replace(/(^|\s+)RCT_METRO_PORT=\d+\s+/g, `\1RCT_METRO_PORT=${port} `) + ` --port ${port}`
     } catch (e) {
       console.error(`package.json: modify scripts.${cmd} failed`)
       process.exit(1)
@@ -58,11 +60,7 @@ const patchFiles = () => {
       ]
     ],
     [
-      /port \|\| '8081'/,
-      `port || '${port}'`,
-      [
-        './node_modules/@react-native-community/cli-hermes/build/profileHermes/sourcemapUtils.js'
-      ]
+      /port \|\| '8081'/, `port || '${port}'`, './node_modules/@react-native-community/cli-hermes/build/profileHermes/sourcemapUtils.js'
     ],
     [
       /^#define RCT_METRO_PORT\s+\d+$/mg,
@@ -73,11 +71,36 @@ const patchFiles = () => {
       ]
     ],
     [
-      /^const FALLBACK = 'http:\/\/localhost:\d+\/';$/g,
-      `const FALLBACK = 'http://localhost:${port}/';`,
+      /^const FALLBACK = 'http:\/\/localhost:\d+\/';$/g, `const FALLBACK = 'http://localhost:${port}/';`,
       [
         './node_modules/react-native/Libraries/Core/Devtools/getDevServer.js',
-
+      ]
+    ],
+    [
+      />\d+</g, `>${port}<`, './node_modules/react-native/ReactAndroid/src/main/res/systeminfo/values/values.xml'
+    ],
+    [
+      /localhost:\d+/, `localhost:${port}`, './node_modules/react-native/ReactAndroid/src/main/java/com/facebook/react/devsupport/DevSupportManagerBase.java'
+    ],
+    [
+      /return value != null \? value : "\d+"/,
+      `return value != null ? value : "${port}"`,
+      './node_modules/react-native/ReactAndroid/build.gradle'
+    ],
+    [
+      /NSNumber \*port = @\d+;/, `NSNumber *port = @${port};`,
+      './node_modules/react-native/React/DevSupport/RCTInspectorDevServerHelper.mm'
+    ],
+    [
+      /textField.placeholder = @"\d+";/, `textField.placeholder = @"${port}";`, './node_modules/react-native/React/CoreModules/RCTDevMenu.mm'
+    ],
+    [
+      /default: \d+/, `default: ${port}`,
+      [
+        './node_modules/metro/node_modules/.bin/metro-inspector-proxy',
+        './node_modules/metro-inspector-proxy/src/cli.js.flow',
+        './node_modules/metro-inspector-proxy/src/cli.js',
+        './node_modules/.bin/metro-inspector-proxy',
       ]
     ]
   ]

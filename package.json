@@ -1,0 +1,23 @@
+{
+  "name": "rn-change-port",
+  "version": "1.0.1-0",
+  "description": "change react native default port",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "react native",
+    "change port",
+    "port"
+  ],
+  "author": "0x0a0d",
+  "license": "ISC",
+  "bin": {
+    "rn-change-port": "index.js"
+  },
+  "repository": {
+    "url": "https://github.com/0x0a0d/rn-change-port",
+    "type": "git"
+  }
+}

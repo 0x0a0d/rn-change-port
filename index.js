@@ -35,9 +35,8 @@ const modifyPackageJson = () => {
   }
   for (const cmd of ['android', 'ios', 'start']) {
     try {
-      json.scripts[cmd] = json.scripts[cmd]
-        .replace(/\s+--port\s+\d+/g, '')
-        .replace(/(^|\s+)RCT_METRO_PORT=\d+\s+/g, `\1RCT_METRO_PORT=${port} `) + ` --port ${port}`
+      json.scripts[cmd] = `RCT_METRO_PORT=${ port } ` + json.scripts[cmd].replace(/\s+--port\s+\d+/g, '')
+        .replace(/(^|\s+)RCT_METRO_PORT=\d+\s+/, (m0, m1) => m1) + ` --port ${ port }`
     } catch (e) {
       console.error(`package.json: modify scripts.${cmd} failed`)
       process.exit(1)

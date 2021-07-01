@@ -2,7 +2,7 @@
 const fs = require('fs')
 const path = require('path')
 
-const port = parseInt(process.argv[2])
+const port = parseInt(process.argv[2], 10)
 const pathReactNative = path.resolve(process.cwd(), process.argv[3] || '.')
 
 if (isNaN(port) || !(port > 0 && port < Math.pow(2, 16))) {
@@ -11,16 +11,17 @@ if (isNaN(port) || !(port > 0 && port < Math.pow(2, 16))) {
   process.exit(1)
 }
 
-const modifyFile = (paths, findRegex, replace) => {
-  if (Array.isArray(paths)) {
-    paths.forEach(p => modifyFile(p, findRegex, replace))
+const modifyFile = (file, findRegex, replace) => {
+  if (Array.isArray(file)) {
+    file.forEach(filePath => modifyFile(filePath, findRegex, replace))
     return
   }
-  if (!fs.existsSync(paths)) {
-    console.warn(`Missing Pod file: ${paths}`)
+  const filePath = path.resolve(pathReactNative, file)
+  if (!fs.existsSync(filePath)) {
+    console.warn(`Missing Pod filePath: ${filePath}`)
   }
-  const content = fs.readFileSync(paths, 'utf8')
-  fs.writeFileSync(paths, content.replace(findRegex, replace))
+  const content = fs.readFileSync(filePath, 'utf8')
+  fs.writeFileSync(filePath, content.replace(findRegex, replace))
 }
 
 const modifyPackageJson = () => {
@@ -43,20 +44,59 @@ const modifyPackageJson = () => {
   fs.writeFileSync(packagePath, JSON.stringify(json, null, 2))
 }
 
-const xcodeModify = () => {
+const patchFiles = () => {
+  const files = [
+    [
+      /RCT_METRO_PORT(\)?\s+\|\|\s+)(['"]?)\d+\2/g,
+      (m, m1, m2) => `RCT_METRO_PORT${m1} || ${m2}${port}${m2}`,
+      [
+        './node_modules/@react-native-community/cli-hermes/build/profileHermes/index.js',
+        './node_modules/@react-native-community/cli-platform-ios/build/commands/runIOS/index.js',
+        './node_modules/@react-native-community/cli/build/tools/loadMetroConfig.js',
+        './node_modules/@react-native-community/cli-tools/build/isPackagerRunning.js',
+        './node_modules/@react-native-community/cli-platform-android/build/commands/runAndroid/index.js',
+      ]
+    ],
+    [
+      /port \|\| '8081'/,
+      `port || '${port}'`,
+      [
+        './node_modules/@react-native-community/cli-hermes/build/profileHermes/sourcemapUtils.js'
+      ]
+    ],
+    [
+      /^#define RCT_METRO_PORT\s+\d+$/mg,
+      `#define RCT_METRO_PORT ${port}`,
+      [
+        './ios/Pods/Headers/Public/React-Core/React/RCTDefines.h',
+        './ios/Pods/Headers/Private/React-Core/React/RCTDefines.h',
+      ]
+    ],
+    [
+      /^const FALLBACK = 'http:\/\/localhost:\d+\/';$/g,
+      `const FALLBACK = 'http://localhost:${port}/';`,
+      [
+        './node_modules/react-native/Libraries/Core/Devtools/getDevServer.js',
+
+      ]
+    ]
+  ]
   const proj = fs.readdirSync(`${pathReactNative}/ios`).find(file => file.endsWith('.xcodeproj'))
   if (proj == null) {
     console.error('Could not detect project xcode file. But you can ignore this')
-    return
+  } else {
+    files[{
+      find: /RCT_METRO_PORT:=\d+/,
+      replace: `RCT_METRO_PORT:=${port}`
+    }] = [
+      `ios/${proj}/project.pbxproj`
+    ]
   }
-  modifyFile(`${pathReactNative}/ios/${proj}/project.pbxproj`, /RCT_METRO_PORT:=\d+/, `RCT_METRO_PORT:=${port}`)
+  return files
 }
 
-const pods = [
-  `${pathReactNative}/ios/Pods/Headers/Public/React-Core/React/RCTDefines.h`,
-  `${pathReactNative}/ios/Pods/Headers/Private/React-Core/React/RCTDefines.h`,
-]
 modifyPackageJson()
-modifyFile(pods, /^#define RCT_METRO_PORT\s+\d+$/mg, `#define RCT_METRO_PORT ${port}`)
-modifyFile('./node_modules/react-native/Libraries/Core/Devtools/getDevServer.js', /^const FALLBACK = 'http:\/\/localhost:\d+\/';$/g, `const FALLBACK = 'http://localhost:${port}/';`)
-xcodeModify()
+
+patchFiles(port, pathReactNative).forEach(([find, replace, paths]) => {
+  modifyFile(paths, find, replace)
+})

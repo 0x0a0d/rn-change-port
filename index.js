@@ -43,21 +43,20 @@ const modifyPackageJson = () => {
   fs.writeFileSync(packagePath, JSON.stringify(json, null, 4))
 }
 
+const xcodeModify = () => {
+  const proj = fs.readdirSync(`${pathReactNative}/ios`).find(file => file.endsWith('.xcodeproj'))
+  if (proj == null) {
+    console.error('Could not detect project xcode file. But you can ignore this')
+    return
+  }
+  modifyFile(`${pathReactNative}/ios/${proj}/project.pbxproj`, /RCT_METRO_PORT:=\d+/, `RCT_METRO_PORT:=${port}`)
+}
+
+const pods = [
+  `${pathReactNative}/ios/Pods/Headers/Public/React-Core/React/RCTDefines.h`,
+  `${pathReactNative}/ios/Pods/Headers/Private/React-Core/React/RCTDefines.h`,
+]
 modifyPackageJson()
-
-modifyFile(
-  [
-    `${pathReactNative}/ios/Pods/Headers/Public/React-Core/React/RCTDefines.h`,
-    `${pathReactNative}/ios/Pods/Headers/Private/React-Core/React/RCTDefines.h`,
-  ],
-  /^#define RCT_METRO_PORT\s+\d+$/mg,
-  `#define RCT_METRO_PORT ${port}`
-)
-
-modifyFile(
-  [
-    './node_modules/react-native/Libraries/Core/Devtools/getDevServer.js',
-  ],
-  /^const FALLBACK = 'http:\/\/localhost:\d+\/';$/g,
-  `const FALLBACK = 'http://localhost:${port}/';`
-)
+modifyFile(pods, /^#define RCT_METRO_PORT\s+\d+$/mg, `#define RCT_METRO_PORT ${port}`)
+modifyFile('./node_modules/react-native/Libraries/Core/Devtools/getDevServer.js', /^const FALLBACK = 'http:\/\/localhost:\d+\/';$/g, `const FALLBACK = 'http://localhost:${port}/';`)
+xcodeModify()

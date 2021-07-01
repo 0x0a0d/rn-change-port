@@ -40,7 +40,7 @@ const modifyPackageJson = () => {
       process.exit(1)
     }
   }
-  fs.writeFileSync(packagePath, JSON.stringify(json, null, 4))
+  fs.writeFileSync(packagePath, JSON.stringify(json, null, 2))
 }
 
 const xcodeModify = () => {

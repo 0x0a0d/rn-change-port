@@ -1,6 +1,6 @@
 {
   "name": "rn-change-port",
-  "version": "1.0.1-0",
+  "version": "1.0.1",
   "description": "change react native default port",
   "main": "index.js",
   "scripts": {

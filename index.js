@@ -18,7 +18,7 @@ const modifyFile = (file, findRegex, replace) => {
   }
   const filePath = path.resolve(pathReactNative, file)
   if (!fs.existsSync(filePath)) {
-    console.warn(`Missing Pod filePath: ${filePath}`)
+    console.warn(`Missing file: ${filePath}`)
   }
   const content = fs.readFileSync(filePath, 'utf8')
   fs.writeFileSync(filePath, content.replace(findRegex, replace))
@@ -81,16 +81,15 @@ const patchFiles = () => {
       ]
     ]
   ]
-  const proj = fs.readdirSync(`${pathReactNative}/ios`).find(file => file.endsWith('.xcodeproj'))
-  if (proj == null) {
+  const projs = fs.readdirSync(`${pathReactNative}/ios`).filter(file => file.endsWith('.xcodeproj'))
+  if (projs.length === 0) {
     console.error('Could not detect project xcode file. But you can ignore this')
   } else {
-    files[{
-      find: /RCT_METRO_PORT:=\d+/,
-      replace: `RCT_METRO_PORT:=${port}`
-    }] = [
-      `ios/${proj}/project.pbxproj`
-    ]
+    files.push([
+      /RCT_METRO_PORT:=\d+/,
+      `RCT_METRO_PORT:=${port}`,
+      projs.map(proj => `ios/${proj}/project.pbxproj`)
+    ])
   }
   return files
 }

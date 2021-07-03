@@ -19,6 +19,7 @@ const modifyFile = (file, findRegex, replace) => {
   const filePath = path.resolve(pathReactNative, file)
   if (!fs.existsSync(filePath)) {
     console.warn(`Missing file: ${filePath}`)
+    return
   }
   const content = fs.readFileSync(filePath, 'utf8')
   fs.writeFileSync(filePath, content.replace(findRegex, replace))
